@@ -41,8 +41,33 @@ event-registration-system/
 ├── scripts/seed_events.py     # adds 2 sample events after deploy
 ├── tests/test_handlers.py     # unit tests (mocked AWS, no real account needed)
 ├── .github/workflows/deploy.yml  # CI/CD pipeline
-└── README.md                  # you are here
+├── README.md                  # you are here
+└── frontend/                  # browser dashboard (no build step)
 ```
+
+---
+
+## Frontend dashboard
+
+`frontend/` contains a lightweight, dependency-free HTML/CSS/JavaScript
+dashboard for the **Home-in Prison Foundation Annual Fundraising**. It calls
+the deployed API Gateway directly to list events, create registrations, find
+registrations by email, and cancel registrations.
+
+1. Deploy the SAM stack and copy the `ApiUrl` stack output.
+2. Open `frontend/index.html` in a browser (or serve the project with a static
+   web server).
+3. Expand **API connection settings**, paste the `ApiUrl`, and select **Save
+   and load events**. The URL is saved only in that browser's local storage.
+
+For a simple local static server, run this from the project root:
+
+```bash
+python -m http.server 8000 --directory frontend
+```
+
+Then open `http://localhost:8000`. API Gateway CORS is already configured in
+`template.yaml` for these browser requests.
 
 ---
 
@@ -68,6 +93,95 @@ Table design:
 - `Registrations` table → key: `registrationId` (string), plus a
   **Global Secondary Index** on `email` so `GET /registrations/{email}` is a
   fast, cheap *query* instead of a full table *scan*.
+
+### Architecture diagram
+
+Use this as the source for a draw.io architecture diagram. Keep the primary
+request path left-to-right and use dashed connectors for optional components.
+
+#### Architecture skeleton
+
+```text
+[Event Attendee / Web Frontend]
+              |
+              | sign in / sign up
+              v
+     [Amazon Cognito User Pool]
+              |
+              | JWT access token
+              v
+      [Amazon API Gateway]
+              |
+              | authorised HTTPS requests
+              v
+  +-----------------------------+
+  |        AWS Lambda           |
+  |  - Register registration    |
+  |  - List events              |
+  |  - Get registrations        |
+  |  - Cancel registration      |
+  +-----------------------------+
+         |                 |
+         |                 +--------------------> [CloudWatch Logs & Alarms]
+         v
+  +-----------------------------+
+  |          DynamoDB           |
+  |  - Events table             |
+  |  - Registrations table      |
+  |    (EmailIndex GSI)         |
+  +-----------------------------+
+
+[GitHub Actions] ---- deploys ----> [AWS SAM stack]
+[Register Lambda] --- optional ---> [SNS] ---> [Email recipient]
+```
+
+**Authentication note:** Cognito is shown as the recommended authentication
+layer for a production version. The frontend signs users in with a Cognito
+User Pool and sends its JWT in the `Authorization` header; API Gateway then
+validates that token before invoking a Lambda function. Cognito is not yet
+defined in `template.yaml`, so the current API remains publicly accessible
+until a Cognito authorizer is added.
+
+```mermaid
+flowchart LR
+    User[Event attendee or frontend] -->|sign up / sign in| Cognito[Amazon Cognito\nUser Pool]
+    Cognito -->|JWT access token| User
+    User -->|Authorization header + HTTPS REST request| Api[Amazon API Gateway\nCORS-enabled REST API]
+
+    subgraph AWS[AWS Cloud / SAM stack]
+        Cognito -. validates JWT .-> Api
+        Api -->|POST /register| Register[Register Lambda]
+        Api -->|GET /events| List[List Events Lambda]
+        Api -->|GET /registrations/{email}| Get[Get Registrations Lambda]
+        Api -->|DELETE /registration/{id}| Cancel[Cancel Registration Lambda]
+
+        Register -->|read event| Events[(DynamoDB\nEvents table)]
+        Register -->|create registration| Registrations[(DynamoDB\nRegistrations table)]
+        List -->|scan events| Events
+        Get -->|query EmailIndex| Registrations
+        Cancel -->|delete registration| Registrations
+
+        Register -. optional confirmation .-> SNS[Amazon SNS topic]
+        Alarm[CloudWatch error-rate alarm] -. optional alert .-> SNS
+        Register --> Logs[CloudWatch Logs]
+        List --> Logs
+        Get --> Logs
+        Cancel --> Logs
+    end
+
+    SNS -. email .-> Email[Notification email recipient]
+    GitHub[GitHub Actions] -. build and deploy .-> AWS
+```
+
+**Draw.io layout:** draw a large **AWS Cloud / SAM Stack** container in the
+centre. Place Cognito between the user/frontend on the left and API Gateway
+inside the container, including a return arrow for the JWT token. Arrange the
+four Lambda functions in a vertical column, with the two DynamoDB tables to
+their right. Place CloudWatch below the Lambdas, SNS below the tables, the
+notification recipient outside the container on the right, and GitHub Actions
+above it. Label arrows with the HTTP method/path or operation above; use solid
+arrows for request/data paths and dashed arrows for deployment, monitoring,
+optional email, and proposed authentication paths.
 
 ---
 
