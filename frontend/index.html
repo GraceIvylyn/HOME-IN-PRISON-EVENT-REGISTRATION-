@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Home-in Prison Foundation annual fundraising event registration dashboard." />
+    <title>Home-in Prison Foundation | Annual Fundraising</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Home-in Prison Foundation home">
+        <span class="brand-mark" aria-hidden="true">H</span>
+        <span>Home-in Prison <small>Foundation</small></span>
+      </a>
+      <a class="header-link" href="#my-registrations">Manage my booking</a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <p class="eyebrow">Annual fundraising</p>
+        <h1>A home begins with <em>hope.</em></h1>
+        <p class="hero-copy">Join a community committed to rebuilding lives, restoring dignity, and creating pathways home after prison.</p>
+        <a class="button button-primary" href="#events">View fundraising events <span aria-hidden="true">↓</span></a>
+      </section>
+
+      <section class="impact-strip" aria-label="Foundation impact">
+        <div><strong>One community</strong><span>gathered for change</span></div>
+        <div><strong>Every ticket</strong><span>helps build brighter futures</span></div>
+        <div><strong>Annual campaign</strong><span>support that lasts beyond one night</span></div>
+      </section>
+
+      <section id="events" class="section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Find your place</p>
+            <h2>Fundraising events</h2>
+          </div>
+          <button id="refresh-events" class="text-button" type="button">Refresh events</button>
+        </div>
+        <div id="events-status" class="status-message" role="status">Add your API URL below, then load events.</div>
+        <div id="events-list" class="event-grid" aria-live="polite"></div>
+      </section>
+
+      <section id="register" class="section form-section">
+        <div class="form-intro">
+          <p class="eyebrow">Reserve your place</p>
+          <h2>Register for an event</h2>
+          <p>Complete the form and we’ll save your registration straight away.</p>
+        </div>
+        <form id="registration-form" class="card-form">
+          <label>
+            Event
+            <select id="event-id" name="eventId" required>
+              <option value="">Choose an event</option>
+            </select>
+          </label>
+          <label>
+            Your name <span class="optional">(optional)</span>
+            <input id="name" name="name" type="text" autocomplete="name" placeholder="Your full name" />
+          </label>
+          <label>
+            Email address
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          </label>
+          <button class="button button-primary" type="submit">Complete registration</button>
+          <p id="registration-result" class="form-result" role="status"></p>
+        </form>
+      </section>
+
+      <section id="my-registrations" class="section manage-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Your bookings</p>
+            <h2>Manage registrations</h2>
+          </div>
+        </div>
+        <form id="lookup-form" class="lookup-form">
+          <label class="sr-only" for="lookup-email">Email address</label>
+          <input id="lookup-email" type="email" autocomplete="email" placeholder="Enter your email address" required />
+          <button class="button button-dark" type="submit">Find my registrations</button>
+        </form>
+        <div id="registrations-list" class="registration-list" aria-live="polite"></div>
+      </section>
+
+      <section class="section api-section">
+        <details id="api-settings">
+          <summary>API connection settings</summary>
+          <div class="api-settings-content">
+            <p>Paste the <code>ApiUrl</code> value from your SAM deployment output. Example: <code>https://abc123.execute-api.eu-west-1.amazonaws.com/dev</code></p>
+            <div class="api-control">
+              <label for="api-url">SAM API Gateway URL</label>
+              <input id="api-url" type="url" placeholder="https://your-api.execute-api.region.amazonaws.com/dev" />
+              <button id="save-api-url" class="button button-dark" type="button">Save and load events</button>
+            </div>
+            <p id="api-result" class="form-result" role="status"></p>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <footer>© <span id="year"></span> Home-in Prison Foundation · Annual Fundraising</footer>
+    <script src="app.js"></script>
+  </body>
+</html>
