@@ -56,7 +56,8 @@ registrations by email, and cancel registrations.
 
 1. Deploy the SAM stack and copy the `ApiUrl` stack output.
 2. Open `frontend/index.html` in a browser (or serve the project with a static
-   web server).
+   web server). For the current deployment, use the API Gateway URL ending in
+   `/Prod` (the API stage name), not the DynamoDB environment suffix `/dev`.
 3. Expand **API connection settings**, paste the `ApiUrl`, and select **Save
    and load events**. The URL is saved only in that browser's local storage.
 
@@ -68,6 +69,53 @@ python -m http.server 8000 --directory frontend
 
 Then open `http://localhost:8000`. API Gateway CORS is already configured in
 `template.yaml` for these browser requests.
+
+### Admin dashboard
+
+The protected staff dashboard is at `frontend/admin/index.html`. It lists every
+registration, provides search and CSV export, and lets authorised staff cancel
+a booking. It calls **only** the Cognito-protected admin API routes:
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/admin/registrations` | List all registrations |
+| DELETE | `/admin/registration/{id}` | Cancel a registration |
+
+After deploying the updated stack, copy these CloudFormation outputs into the
+**Admin connection settings** panel:
+
+- `ApiUrl`
+- `AdminUserPoolId`
+- `AdminUserPoolClientId`
+
+Create your first staff account, set a permanent password, and add it to the
+`Admins` group (replace the placeholders with stack outputs and your email):
+
+```bash
+aws cognito-idp admin-create-user \
+  --user-pool-id USER_POOL_ID \
+  --username admin@example.com \
+  --user-attributes Name=email,Value=admin@example.com Name=email_verified,Value=true \
+  --region us-east-1
+
+aws cognito-idp admin-set-user-password \
+  --user-pool-id USER_POOL_ID \
+  --username admin@example.com \
+  --password 'Use-A-Strong-Unique-Password1!' \
+  --permanent \
+  --region us-east-1
+
+aws cognito-idp admin-add-user-to-group \
+  --user-pool-id USER_POOL_ID \
+  --username admin@example.com \
+  --group-name Admins \
+  --region us-east-1
+```
+
+Use your deployment region in every command. The public attendee dashboard
+continues to use the existing `/events`, `/register`, `/registrations/{email}`
+and `/registration/{id}` routes; the new staff routes require an `Admins`
+group token.
 
 ---
 
@@ -336,5 +384,6 @@ mean your business logic is correct *before* you spend a single AWS credit.
 - **403/permissions errors in Lambda logs** — check the `Policies:` block
   for that function in `template.yaml`; it may be missing a permission.
 - **CORS errors from a browser** — confirm your frontend is hitting the
-  exact `ApiUrl` from `sam deploy` output, including the `/dev` (or your
-  stage name) prefix.
+  exact `ApiUrl` from `sam deploy` output. This implicit SAM API uses the
+  `/Prod` API Gateway stage; the separate `Stage` parameter controls resource
+  names such as `events-dev`.
