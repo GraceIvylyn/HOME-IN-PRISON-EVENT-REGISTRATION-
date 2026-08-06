@@ -1,4 +1,5 @@
 .aws-sam/
+.aws-sam-new/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -6,3 +7,4 @@ __pycache__/
 samconfig.toml
 venv/
 .vscode/
+build.toml

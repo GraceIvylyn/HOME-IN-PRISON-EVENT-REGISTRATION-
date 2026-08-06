@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Home-in Prison Foundation fundraising administration dashboard." />
+    <title>Admin | Home-in Prison Foundation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body class="admin-body">
+    <header class="admin-header">
+      <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true">H</span><span>Home-in Prison <small>Foundation</small></span></a>
+      <div class="admin-header-actions"><span id="admin-email" class="admin-email"></span><button id="sign-out" class="text-button" type="button" hidden>Sign out</button></div>
+    </header>
+
+    <main class="admin-main">
+      <section id="login-panel" class="login-panel">
+        <p class="eyebrow">Foundation staff</p><h1>Fundraising administration</h1>
+        <p>Sign in to review registrations and manage attendee bookings.</p>
+        <form id="login-form" class="card-form">
+          <label>Email address<input id="login-email" type="email" autocomplete="username" required /></label>
+          <label>Password<input id="login-password" type="password" autocomplete="current-password" required /></label>
+          <button class="button button-primary" type="submit">Sign in securely</button>
+          <p id="login-result" class="form-result" role="status"></p>
+        </form>
+        <details class="settings"><summary>Admin connection settings</summary><div class="settings-fields">
+          <label>API Gateway URL<input id="api-url" type="url" placeholder="https://.../dev" /></label>
+          <label>Cognito User Pool ID<input id="user-pool-id" type="text" placeholder="us-east-1_abc123" /></label>
+          <label>Cognito App Client ID<input id="client-id" type="text" placeholder="abc123..." /></label>
+          <button id="save-settings" class="button button-dark" type="button">Save settings</button>
+          <p id="settings-result" class="form-result" role="status"></p>
+        </div></details>
+      </section>
+
+      <section id="dashboard" hidden>
+        <div class="dashboard-title"><div><p class="eyebrow">Annual fundraising</p><h1>Registration overview</h1></div><button id="refresh" class="button button-dark" type="button">Refresh data</button></div>
+        <div class="metric-grid"><article><span>Total registrations</span><strong id="registration-count">—</strong></article><article><span>Unique attendees</span><strong id="attendee-count">—</strong></article><article><span>Fundraising events</span><strong id="event-count">—</strong></article></div>
+        <section class="table-panel"><div class="table-toolbar"><div><h2>Attendee registrations</h2><p id="table-status" class="form-result" role="status"></p></div><div class="toolbar-actions"><input id="search" type="search" placeholder="Search name, email or event" /><button id="export-csv" class="text-button" type="button">Export CSV</button></div></div><div class="table-scroll"><table><thead><tr><th>Attendee</th><th>Event</th><th>Registered</th><th>Status</th><th aria-label="Actions"></th></tr></thead><tbody id="registrations-table"></tbody></table></div></section>
+      </section>
+    </main>
+    <script src="../config.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>

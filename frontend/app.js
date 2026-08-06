@@ -1,5 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
-const state = { apiUrl: localStorage.getItem("hipfApiUrl") || "", events: [] };
+const state = { apiUrl: window.HIPF_CONFIG?.apiUrl || localStorage.getItem("hipfApiUrl") || "", events: [] };
 const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 
 function api(path) {
@@ -8,7 +8,9 @@ function api(path) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(api(path), { headers: { "Content-Type": "application/json", ...options.headers }, ...options });
+  const headers = { ...options.headers };
+  if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+  const response = await fetch(api(path), { ...options, headers });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error || `Request failed (${response.status}).`);
   return payload;
