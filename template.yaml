@@ -41,6 +41,10 @@ Globals:
       AllowMethods: "'GET,POST,DELETE,OPTIONS'"
       AllowHeaders: "'Content-Type,Authorization'"
       AllowOrigin: "'*'"
+    Auth:
+      Authorizers:
+        AdminAuthorizer:
+          UserPoolArn: !GetAtt AdminUserPool.Arn
 
 # ---------------------------------------------------------------------------
 # RESOURCES
@@ -82,6 +86,40 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+
+  # ---------------------------------------------------------------------
+  # Cognito - protects staff-only registration management routes
+  # ---------------------------------------------------------------------
+  AdminUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "home-in-prison-admins-${Stage}"
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+
+  AdminUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref AdminUserPool
+      ClientName: !Sub "home-in-prison-admin-dashboard-${Stage}"
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+
+  AdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Admins
+      UserPoolId: !Ref AdminUserPool
+      Description: Foundation staff authorised to manage registrations
 
   # ---------------------------------------------------------------------
   # Optional SNS Topic for confirmation emails + alarm notifications
@@ -173,6 +211,42 @@ Resources:
             Path: /registration/{id}
             Method: delete
 
+  AdminListRegistrationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "event-admin-list-registrations-${Stage}"
+      CodeUri: src/handlers/
+      Handler: admin_list_registrations.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RegistrationsTable
+      Events:
+        AdminListRegistrationsApi:
+          Type: Api
+          Properties:
+            Path: /admin/registrations
+            Method: get
+            Auth:
+              Authorizer: AdminAuthorizer
+
+  AdminCancelRegistrationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "event-admin-cancel-registration-${Stage}"
+      CodeUri: src/handlers/
+      Handler: admin_cancel_registration.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RegistrationsTable
+      Events:
+        AdminCancelRegistrationApi:
+          Type: Api
+          Properties:
+            Path: /admin/registration/{id}
+            Method: delete
+            Auth:
+              Authorizer: AdminAuthorizer
+
   # ---------------------------------------------------------------------
   # CloudWatch Alarms - error rate > 5% per function
   # (Metric math: Errors / Invocations * 100)
@@ -227,9 +301,15 @@ Resources:
 # ---------------------------------------------------------------------------
 Outputs:
   ApiUrl:
-    Description: Base URL for the API Gateway stage
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+    Description: Base URL for the implicit API Gateway Prod stage
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
   EventsTableName:
     Value: !Ref EventsTable
   RegistrationsTableName:
     Value: !Ref RegistrationsTable
+  AdminUserPoolId:
+    Description: Paste into the admin dashboard Cognito settings
+    Value: !Ref AdminUserPool
+  AdminUserPoolClientId:
+    Description: Paste into the admin dashboard Cognito settings
+    Value: !Ref AdminUserPoolClient

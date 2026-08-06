@@ -120,3 +120,32 @@ def test_get_registrations_and_cancel(dynamodb_tables):
 
     cancel_again = cancel_registration.handler(cancel_event, None)
     assert cancel_again["statusCode"] == 404
+
+
+def test_admin_can_list_and_cancel_registrations(dynamodb_tables):
+    register = _reload("register")
+    admin_list = _reload("admin_list_registrations")
+    admin_cancel = _reload("admin_cancel_registration")
+
+    registered = register.handler(
+        {"body": json.dumps({"eventId": "evt-001", "email": "admin-test@example.com"})}, None
+    )
+    registration_id = json.loads(registered["body"])["registration"]["registrationId"]
+    admin_event = {"requestContext": {"authorizer": {"claims": {"cognito:groups": "Admins"}}}}
+
+    listed = admin_list.handler(admin_event, None)
+    assert listed["statusCode"] == 200
+    assert json.loads(listed["body"])["count"] == 1
+
+    cancelled = admin_cancel.handler(
+        {**admin_event, "pathParameters": {"id": registration_id}}, None
+    )
+    assert cancelled["statusCode"] == 200
+
+
+def test_admin_routes_reject_non_admins(dynamodb_tables):
+    admin_list = _reload("admin_list_registrations")
+    result = admin_list.handler(
+        {"requestContext": {"authorizer": {"claims": {"cognito:groups": "Volunteers"}}}}, None
+    )
+    assert result["statusCode"] == 403
