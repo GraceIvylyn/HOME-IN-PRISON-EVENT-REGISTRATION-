@@ -114,3 +114,4 @@ $("#lookup-form").addEventListener("submit", async (event) => {
 $("#api-url").value = state.apiUrl;
 $("#year").textContent = new Date().getFullYear();
 if (state.apiUrl) loadEvents();
+if (state.apiUrl) loadEvents();
