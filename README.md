@@ -354,6 +354,29 @@ Simplest path for a student project: AWS Console → Billing → Budgets →
   ```
   This removes every resource the stack created — no leftover charges.
 
+## Frontend hosting (AWS Amplify)
+
+The `frontend/` folder is hosted separately via AWS Amplify Hosting, connected directly to this repo's `main` branch. Every push to `main` triggers an automatic rebuild and redeploy of the site — no manual steps needed.
+
+**Live URL:** (add your Amplify URL here once deployed, e.g. `https://main.xxxxxxxxxx.amplifyapp.com`)
+
+**Amplify build settings (`amplify.yml`):**
+\`\`\`yaml
+version: 1
+frontend:
+  phases:
+    build:
+      commands: []
+  artifacts:
+    baseDirectory: frontend
+    files:
+      - '**/*'
+  cache:
+    paths: []
+\`\`\`
+
+The backend (API Gateway, Lambda, DynamoDB) still deploys separately via `sam deploy`, triggered by the GitHub Actions workflow in `.github/workflows/deploy.yml`. `frontend/config.js` holds the deployed API URL and Cognito IDs that connect this hosted frontend to that backend — update it manually whenever the backend stack's outputs change.
+
 ### Deliverables checklist (matches the brief)
 - [x] GitHub repo with API code
 - [x] CI/CD pipeline (GitHub Actions)
