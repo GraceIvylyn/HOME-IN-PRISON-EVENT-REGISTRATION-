@@ -5,6 +5,7 @@ using the EmailIndex Global Secondary Index for an efficient query
 (instead of scanning the whole table).
 """
 import os
+from urllib.parse import unquote
 import boto3
 from boto3.dynamodb.conditions import Key
 from utils.response import build_response, error_response
@@ -15,7 +16,7 @@ REGISTRATIONS_TABLE = os.environ["REGISTRATIONS_TABLE"]
 
 def handler(event, context):
     path_params = event.get("pathParameters") or {}
-    email = (path_params.get("email") or "").strip().lower()
+    email = unquote((path_params.get("email") or "").strip()).lower()
 
     if not email:
         return error_response(400, "email path parameter is required")
