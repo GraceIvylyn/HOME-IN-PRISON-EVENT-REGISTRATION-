@@ -70,12 +70,13 @@ $("#save-api-url").addEventListener("click", async () => {
 $("#refresh-events").addEventListener("click", loadEvents);
 $("#registration-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const form = new FormData(event.currentTarget);
+  const formEl = event.currentTarget;
+  const form = new FormData(formEl);
   try {
     setMessage("#registration-result", "Saving your registration…");
     const data = await request("/register", { method: "POST", body: JSON.stringify(Object.fromEntries(form)) });
-    setMessage("#registration-result", `You’re registered. Your confirmation ID is ${data.registration.registrationId}.`, "success");
-    event.currentTarget.reset();
+    setMessage("#registration-result", `You're registered. Your confirmation ID is ${data.registration.registrationId}.`, "success");
+    formEl.reset();
   } catch (error) { setMessage("#registration-result", error.message, "error"); }
 });
 
