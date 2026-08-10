@@ -1,8 +1,7 @@
 # Event Registration & Ticketing System
 
 A serverless REST API built with **AWS SAM** that replaces Microsoft Forms +
-Excel for event sign-ups. This README is written so you can hand it to
-someone new to AWS and they can build the whole thing themselves, phase by
+Excel for event sign-ups. This README is written so someone new to AWS can build the whole thing themselves, phase by
 phase, exactly the way the project brief lays it out.
 
 **Stack:** API Gateway → Lambda (Python 3.12) → DynamoDB, with CloudWatch
@@ -144,8 +143,7 @@ Table design:
 
 ### Architecture diagram
 
-Use this as the source for a draw.io architecture diagram. Keep the primary
-request path left-to-right and use dashed connectors for optional components.
+![Architecture](diagrams/architecture%20diagram.png)
 
 #### Architecture skeleton
 
@@ -181,8 +179,8 @@ request path left-to-right and use dashed connectors for optional components.
 
 [GitHub Actions] ---- deploys ----> [AWS SAM stack]
 [Register Lambda] --- optional ---> [SNS] ---> [Email recipient]
-```
 
+```
 **Authentication note:** Cognito is shown as the recommended authentication
 layer for a production version. The frontend signs users in with a Cognito
 User Pool and sends its JWT in the `Authorization` header; API Gateway then
@@ -190,7 +188,7 @@ validates that token before invoking a Lambda function. Cognito is not yet
 defined in `template.yaml`, so the current API remains publicly accessible
 until a Cognito authorizer is added.
 
-
+```
     SNS -. email .-> Email[Notification email recipient]
     GitHub[GitHub Actions] -. build and deploy .-> AWS
 ```
@@ -372,106 +370,105 @@ mean your business logic is correct *before* you spend a single AWS credit.
 
 ## Troubleshooting
 
-- 1. GitHub Actions deploy failing: "Could not load credentials from any providers"
+1. **GitHub Actions deploy failing: "Could not load credentials from any providers"**
 
-Symptom: every push to main triggered Test and Deploy, but the deploy job failed
-immediately with a credentials error.
+    Symptom: every push to main triggered Test and Deploy, but the deploy job failed immediately with a credentials error.
 
-Cause: .github/workflows/deploy.yml was written for OIDC-based AWS authentication
-(role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}), but no IAM role or repo secret had
-actually been created for it yet — the secret was empty.
+    Cause: .github/workflows/deploy.yml was written for OIDC-based AWS authentication
+    (role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}), but no IAM role or repo secret had
+    actually been created for it yet — the secret was empty.
 
-Fix: switched the workflow to plain IAM access-key authentication
-(aws-access-key-id / aws-secret-access-key), backed by an IAM user with the managed
-policies sam deploy needs (CloudFormation, IAM, API Gateway, Lambda, DynamoDB, Cognito,
-SNS, CloudWatch, S3). Added AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY as GitHub repo
-secrets. OIDC remains the more secure long-term option if this gets revisited later.
+    Fix: switched the workflow to plain IAM access-key authentication
+    (aws-access-key-id / aws-secret-access-key), backed by an IAM user with the managed
+    policies sam deploy needs (CloudFormation, IAM, API Gateway, Lambda, DynamoDB, Cognito,
+    SNS, CloudWatch, S3). Added AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY as GitHub repo
+    secrets. OIDC remains the more secure long-term option if this gets revisited later.
 
-2. A duplicate nested project folder, twice
+2. **A duplicate nested project folder, twice**
 
-Symptom: git status reported the whole project folder as a "modified, untracked
-submodule," and git push failed with non-fast-forward errors that didn't make sense.
+    Symptom: git status reported the whole project folder as a "modified, untracked
+    submodule," and git push failed with non-fast-forward errors that didn't make sense.
 
-Cause: at two separate points, a full duplicate copy of the project folder ended up
-nested one level inside itself, with its own .git folder — Git then treated it as a
-broken submodule reference rather than normal files.
+    Cause: at two separate points, a full duplicate copy of the project folder ended up
+    nested one level inside itself, with its own .git folder — Git then treated it as a
+    broken submodule reference rather than normal files.
 
-Fix: deleted the stray inner folder, then git rm -r --cached the leftover tracked
-entries so Git stopped watching it. The second occurrence traced back to OneDrive creating
-a "conflict copy" (see #5).
+    Fix: deleted the stray inner folder, then git rm -r --cached the leftover tracked
+    entries so Git stopped watching it. The second occurrence traced back to OneDrive creating
+    a "conflict copy" (see #5).
 
-3. .gitignore silently not working
+3. **.gitignore silently not working**
 
-Symptom: .aws-sam-new/ and build.toml kept showing up as untracked files even
-though they were listed in .gitignore.
+    Symptom: .aws-sam-new/ and build.toml kept showing up as untracked files even
+    though they were listed in .gitignore.
 
-Cause: the file had been partly written in UTF-16 (visible as null bytes between
-characters when inspected), likely from a PowerShell >> redirect, which defaults to
-UTF-16. Git couldn't parse the corrupted lines as valid ignore patterns.
+    Cause: the file had been partly written in UTF-16 (visible as null bytes between
+    characters when inspected), likely from a PowerShell >> redirect, which defaults to
+    UTF-16. Git couldn't parse the corrupted lines as valid ignore patterns.
 
-Fix: rewrote .gitignore from scratch in plain UTF-8.
+    Fix: rewrote .gitignore from scratch in plain UTF-8.
 
-4. A frontend bug that kept reappearing after being fixed
+4. **A frontend bug that kept reappearing after being fixed**
 
-Symptom: registering for an event threw Cannot read properties of null (reading 'reset') in the browser console — fixed, tested, confirmed working, then reappeared after
-the next deploy, more than once.
+    Symptom: registering for an event threw Cannot read properties of null (reading 'reset') in the browser console — fixed, tested, confirmed working, then reappeared after
+    the next deploy, more than once.
 
-Cause: event.currentTarget.reset() was being called after an await inside an
-async event handler. By the time the awaited request resolved, the browser had already
-reset event.currentTarget to null — standard DOM behavior, not a typo. The fix itself
-also kept vanishing from main due to #5 below.
+    Cause: event.currentTarget.reset() was being called after an await inside an
+    async event handler. By the time the awaited request resolved, the browser had already
+    reset event.currentTarget to null — standard DOM behavior, not a typo. The fix itself
+    also kept vanishing from main due to #5 below.
 
-Fix: capture the form element into its own variable before the await, then call
-.reset() on that captured reference instead of event.currentTarget.
+    Fix: capture the form element into its own variable before the await, then call
+    .reset() on that captured reference instead of event.currentTarget.
 
-5. Fixes silently reverting — the project lived inside a OneDrive-synced folder
+5. **Fixes silently reverting — the project lived inside a OneDrive-synced folder**
 
-Symptom: committed, pushed, merged fixes sometimes didn't appear in the next deploy;
-git pull occasionally failed with a permission error on .git/FETCH_HEAD; OneDrive once
-prompted to delete 225 files — including Git's own internal MERGE_MSG — after a
-routine git pull.
+    Symptom: committed, pushed, merged fixes sometimes didn't appear in the next deploy;
+    git pull occasionally failed with a permission error on .git/FETCH_HEAD; OneDrive once
+    prompted to delete 225 files — including Git's own internal MERGE_MSG — after a
+    routine git pull.
 
-Cause: the repository lived under OneDrive\Documents\.... OneDrive continuously
-syncs and locks files in the background, directly conflicting with Git's own rapid file
-writes during pulls, merges, and checkouts.
+    Cause: the repository lived under OneDrive\Documents\.... OneDrive continuously
+    syncs and locks files in the background, directly conflicting with Git's own rapid file
+    writes during pulls, merges, and checkouts.
 
-Fix: moved the entire project to a plain local folder outside any sync tool
-(C:\Projects\...). This class of problem stopped entirely afterward. Lesson: never run
-a Git repository inside a OneDrive/Dropbox/Google Drive–synced folder.
+    Fix: moved the entire project to a plain local folder outside any sync tool
+    (C:\Projects\...). This class of problem stopped entirely afterward. Lesson: never run
+    a Git repository inside a OneDrive/Dropbox/Google Drive–synced folder.
 
-6. Silent email-lookup failures — the trickiest bug
+6. **Silent email-lookup failures — the trickiest bug**
 
-Symptom: GET /registrations/{email} always returned zero results — even for emails
-confirmed to have just registered successfully. No errors anywhere.
+    Symptom: GET /registrations/{email} always returned zero results — even for emails
+    confirmed to have just registered successfully. No errors anywhere.
 
-Investigation, ruling out one layer at a time: the DynamoDB record existed with the
-correct email; the EmailIndex GSI was active with the correct key; a direct
-aws dynamodb query from the CLI found the item successfully; the Lambda's table
-environment variable was correct; the deployed code matched the repo. A temporary debug
-line added directly in the Lambda console (later overwritten by the next automatic CI/CD
-deploy) revealed the actual raw value the function received: 'jakestamps2%40gmail.com'
-— still URL-encoded.
+    Investigation, ruling out one layer at a time: the DynamoDB record existed with the
+    correct email; the EmailIndex GSI was active with the correct key; a direct
+    aws dynamodb query from the CLI found the item successfully; the Lambda's table
+    environment variable was correct; the deployed code matched the repo. A temporary debug
+    line added directly in the Lambda console (later overwritten by the next automatic CI/CD
+    deploy) revealed the actual raw value the function received: 'jakestamps2%40gmail.com'
+    — still URL-encoded.
 
-Cause: API Gateway was passing the path parameter through to Lambda without decoding
-%40 back to @. The function queried DynamoDB for the literal encoded string, which
-never matched the stored, unencoded email.
+    Cause: API Gateway was passing the path parameter through to Lambda without decoding
+    %40 back to @. The function queried DynamoDB for the literal encoded string, which
+    never matched the stored, unencoded email.
 
-Fix: wrapped the email in Python's urllib.parse.unquote() before querying.
+    Fix: wrapped the email in Python's urllib.parse.unquote() before querying.
 
-7. Admin login failing with "Incorrect username or password" — despite correct credentials
+7. **Admin login failing with "Incorrect username or password" — despite correct credentials**
 
-Symptom: the admin dashboard rejected a login independently verified as correct via
-aws cognito-idp initiate-auth, which succeeded and returned a valid token.
+    Symptom: the admin dashboard rejected a login independently verified as correct via
+    aws cognito-idp initiate-auth, which succeeded and returned a valid token.
 
-Investigation: ruled out account status, app client auth flow settings, password
-policy, and the frontend's request code, which matched the working CLI call exactly. The
-browser showed a genuine 400 from Cognito itself, not a frontend bug.
+    Investigation: ruled out account status, app client auth flow settings, password
+    policy, and the frontend's request code, which matched the working CLI call exactly. The
+    browser showed a genuine 400 from Cognito itself, not a frontend bug.
 
-Cause: unrelated to Cognito entirely — three separate python -m http.server
-processes from earlier sessions were still running in the background on port 8000,
-including one started from the wrong folder. The browser was intermittently served by a
-stale, wrongly-located server instance.
+    Cause: unrelated to Cognito entirely — three separate python -m http.server
+    processes from earlier sessions were still running in the background on port 8000,
+    including one started from the wrong folder. The browser was intermittently served by a
+    stale, wrongly-located server instance.
 
-Fix: netstat -ano | findstr :8000 to find every process on the port, taskkill /PID <pid> /F on each, then start one fresh server. Lesson: when local behavior seems
-impossible given the code, check for zombie background processes before re-reading the
-code again..
+    Fix: netstat -ano | findstr :8000 to find every process on the port, taskkill /PID <pid> /F on each, then start one fresh server. Lesson: when local behavior seems
+    impossible given the code, check for zombie background processes before re-reading the
+    code again.
