@@ -190,33 +190,6 @@ validates that token before invoking a Lambda function. Cognito is not yet
 defined in `template.yaml`, so the current API remains publicly accessible
 until a Cognito authorizer is added.
 
-```mermaid
-flowchart LR
-    User[Event attendee or frontend] -->|sign up / sign in| Cognito[Amazon Cognito\nUser Pool]
-    Cognito -->|JWT access token| User
-    User -->|Authorization header + HTTPS REST request| Api[Amazon API Gateway\nCORS-enabled REST API]
-
-    subgraph AWS[AWS Cloud / SAM stack]
-        Cognito -. validates JWT .-> Api
-        Api -->|POST /register| Register[Register Lambda]
-        Api -->|GET /events| List[List Events Lambda]
-        Api -->|"GET /registrations/{email}"| Get[Get Registrations Lambda]
-        Api -->|"DELETE /registration/{id}"| Cancel[Cancel Registration Lambda]
-    end
-
-        Register -->|read event| Events[(DynamoDB\nEvents table)]
-        Register -->|create registration| Registrations[(DynamoDB\nRegistrations table)]
-        List -->|scan events| Events
-        Get -->|query EmailIndex| Registrations
-        Cancel -->|delete registration| Registrations
-
-        Register -. optional confirmation .-> SNS[Amazon SNS topic]
-        Alarm[CloudWatch error-rate alarm] -. optional alert .-> SNS
-        Register --> Logs[CloudWatch Logs]
-        List --> Logs
-        Get --> Logs
-        Cancel --> Logs
-    end
 
     SNS -. email .-> Email[Notification email recipient]
     GitHub[GitHub Actions] -. build and deploy .-> AWS
