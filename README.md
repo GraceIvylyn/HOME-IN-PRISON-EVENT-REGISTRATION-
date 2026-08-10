@@ -10,7 +10,7 @@ alarms, optional SNS email confirmations, and a GitHub Actions CI/CD pipeline.
 
 ---
 
-## 0. Before you start — install these 3 things
+## 01. Before you start — install these 3 things
 
 | Tool | Why | Check it worked |
 |---|---|---|
@@ -200,8 +200,9 @@ flowchart LR
         Cognito -. validates JWT .-> Api
         Api -->|POST /register| Register[Register Lambda]
         Api -->|GET /events| List[List Events Lambda]
-        Api -->|GET /registrations/{email}| Get[Get Registrations Lambda]
-        Api -->|DELETE /registration/{id}| Cancel[Cancel Registration Lambda]
+        Api -->|"GET /registrations/{email}"| Get[Get Registrations Lambda]
+        Api -->|"DELETE /registration/{id}"| Cancel[Cancel Registration Lambda]
+    end
 
         Register -->|read event| Events[(DynamoDB\nEvents table)]
         Register -->|create registration| Registrations[(DynamoDB\nRegistrations table)]
@@ -235,7 +236,6 @@ optional email, and proposed authentication paths.
 
 ## Phase 2: API Development
 
-The 4 endpoints from the brief are already implemented in `src/handlers/`:
 
 | Method | Path | File | What it does |
 |---|---|---|---|
@@ -381,14 +381,7 @@ frontend:
 
 The backend (API Gateway, Lambda, DynamoDB) still deploys separately via `sam deploy`, triggered by the GitHub Actions workflow in `.github/workflows/deploy.yml`. `frontend/config.js` holds the deployed API URL and Cognito IDs that connect this hosted frontend to that backend — update it manually whenever the backend stack's outputs change.
 
-### Deliverables checklist (matches the brief)
-- [x] GitHub repo with API code
-- [x] CI/CD pipeline (GitHub Actions)
-- [x] Lambda functions
-- [x] DynamoDB table definitions
-- [x] CloudWatch alarms config
-- [x] README file (this one)
-- [ ] Product presentation (problem, challenges, demo) 
+ 
 
 ---
 
