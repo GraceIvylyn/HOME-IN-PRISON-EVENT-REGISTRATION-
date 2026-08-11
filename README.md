@@ -1,15 +1,20 @@
-# Event Registration & Ticketing System
+#Event Registration & Ticketing System-HOME-IN PRISON FOUNDATION 
 
-A serverless REST API built with **AWS SAM** that replaces Microsoft Forms +
-Excel for event sign-ups. This README is written so someone new to AWS can build the whole thing themselves, phase by
-phase, exactly the way the project brief lays it out.
+A serverless REST API built with **AWS SAM** for Home-in Prison
+Foundation's annual fundraising campaign, replacing Microsoft Forms +
+Excel for event sign-ups. Attendees can browse events, register, and
+manage their own booking by email; Foundation staff get a protected
+admin dashboard to review and manage every registration. This README is
+written someone new to AWS and they can build the
+whole thing themselves, phase by phase, exactly the way the project
+brief lays it out..
 
 **Stack:** API Gateway → Lambda (Python 3.12) → DynamoDB, with CloudWatch
-alarms, optional SNS email confirmations, and a GitHub Actions CI/CD pipeline.
+alarms and a GitHub Actions CI/CD pipeline.
 
 ---
 
-## 01. Before you start — install these 3 things
+## 01.Install these 3 things
 
 | Tool | Why | Check it worked |
 |---|---|---|
@@ -49,7 +54,7 @@ event-registration-system/
 ## Frontend dashboard
 
 `frontend/` contains a lightweight, dependency-free HTML/CSS/JavaScript
-dashboard for the **Home-in Prison Foundation Annual Fundraising**. It calls
+dashboard for **Home-in Prison Foundation Annual Fundraising**. It calls
 the deployed API Gateway directly to list events, create registrations, find
 registrations by email, and cancel registrations.
 
