@@ -15,7 +15,8 @@ import uuid
 import re
 from datetime import datetime, timezone
 
-import boto3
+iimport boto3
+from boto3.dynamodb.conditions import Key
 from utils.response import build_response, error_response
 
 dynamodb = boto3.resource("dynamodb")
@@ -44,14 +45,23 @@ def handler(event, context):
     if not email or not EMAIL_REGEX.match(email):
         return error_response(400, "A valid email address is required")
 
-    # --- Confirm the event exists ------------------------------------------
+   # --- Confirm the event exists ------------------------------------------
     events_table = dynamodb.Table(EVENTS_TABLE)
     event_item = events_table.get_item(Key={"eventId": event_id}).get("Item")
     if not event_item:
         return error_response(404, f"Event '{event_id}' does not exist")
 
-    # --- Save the registration ---------------------------------------------
+    # --- Block duplicate registrations for the same email + event ----------
     registrations_table = dynamodb.Table(REGISTRATIONS_TABLE)
+    existing = registrations_table.query(
+        IndexName="EmailIndex",
+        KeyConditionExpression=Key("email").eq(email),
+    )
+    for reg in existing.get("Items", []):
+        if reg.get("eventId") == event_id and reg.get("status") == "confirmed":
+            return error_response(409, "This email is already registered for this event.")
+
+    # --- Save the registration ---------------------------------------------
     registration_id = str(uuid.uuid4())
     item = {
         "registrationId": registration_id,
