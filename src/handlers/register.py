@@ -15,7 +15,7 @@ import uuid
 import re
 from datetime import datetime, timezone
 
-iimport boto3
+import boto3
 from boto3.dynamodb.conditions import Key
 from utils.response import build_response, error_response
 
